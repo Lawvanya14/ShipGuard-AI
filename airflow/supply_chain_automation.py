@@ -3,11 +3,10 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime
 import pandas as pd
 import joblib
-import os
 
 def run_supply_chain_prediction():
 
-    df = pd.read_csv("data/raw/L_SCM_dataset.csv", encoding="latin1")
+    df = pd.read_csv("/opt/airflow/dags/L_SCM_Dataset.csv", encoding="latin1")
 
     X = df.drop([
         'Late_delivery_risk',
@@ -24,24 +23,22 @@ def run_supply_chain_prediction():
     for col in X.select_dtypes(include=['object']).columns:
         X[col] = X[col].astype('category').cat.codes
 
-    model = joblib.load("models/xgb_supply_chain_model.pkl")
+    model = joblib.load("/opt/airflow/dags/lr_supply_chain_model.pkl")
 
     predictions = model.predict(X)
 
     df['Predicted_Late_Delivery_Risk'] = predictions
 
-    os.makedirs("outputs", exist_ok=True)
-    df.to_csv("outputs/predictions_output.csv", index=False)
+    df.to_csv("/opt/airflow/dags/predictions_output.csv", index=False)
 
     print("Supply chain prediction completed successfully.")
 
-
 with DAG(
-    dag_id="shipguard_supply_chain_automation",
+    dag_id="supply_chain_automation",
     start_date=datetime(2024, 1, 1),
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
-    tags=["shipguard", "xgboost", "ml_pipeline"]
+    tags=["supply_chain", "logistic regression", "mlpipeline"]
 ) as dag:
 
     run_prediction_task = PythonOperator(
